@@ -70,11 +70,50 @@ class ReportController extends Controller
             $user->attributes = $_GET['User'];
         }
 
+        $tipePrinterAvailable = [Device::TIPE_CSV_PRINTER];
+        $printers = Device::model()->listDevices($tipePrinterAvailable);
+        //$kertasUntukPdf = ReportPenjualanForm::listKertas();
         $this->render('penjualan', array(
             'model' => $model,
             'profil' => $profil,
             'user' => $user,
             'report' => $report,
+            'printers' => $printers
+        ));
+    }
+
+    public function actionPrintPenjualan()
+    {
+        if (isset($_GET['printId'])) {
+            $device = Device::model()->findByPk($_GET['printId']);
+            switch ($device->tipe_id) {
+                case Device::TIPE_PDF_PRINTER:
+                    /* Ada tambahan parameter kertas untuk tipe pdf */
+                    $this->hutangPiutangPdf($_GET['kertas']);
+                    break;
+                case Device::TIPE_CSV_PRINTER:
+                    $this->penjualanCsv();
+                    break;
+            }
+        }
+    }
+
+    public function penjualanCsv()
+    {
+        $reportPenjualan = new ReportPenjualanForm;
+        $csv = $reportPenjualan->toCsv();
+
+        if (is_null($csv)) {
+            throw new Exception("Tidak ada data", 500);
+        }
+
+        $namaToko = Config::model()->find("nama = 'toko.nama'");
+        $timeStamp = date("Y-m-d-H-i");
+        $namaFile = "Penjualan {$namaToko->nilai} {$timeStamp}";
+
+        $this->renderPartial('_csv', array(
+            'namaFile' => $namaFile,
+            'csv' => $csv
         ));
     }
 
@@ -374,9 +413,16 @@ class ReportController extends Controller
             }
         }
 
+        $profil = new Profil('search');
+        $profil->unsetAttributes();  // clear any default values
+        if (isset($_GET['Profil'])) {
+            $profil->attributes = $_GET['Profil'];
+        }
+
         $kertasUntukPdf = ReportTopRankForm::listKertas();
         $this->render('toprank', [
             'model' => $model,
+            'profil' => $profil,
             'report' => $report,
             'kertasPdf' => $kertasUntukPdf
         ]);
@@ -578,7 +624,7 @@ class ReportController extends Controller
         $itemKeuangan = new ItemKeuangan('search');
         $itemKeuangan->unsetAttributes();  // clear any default values
         $itemKeuangan->parent_id = '>0';
-        /* Uncomment jika ingin trx diluar trx inventory 
+        /* Uncomment jika ingin trx diluar trx inventory
          * fix me: masukkan ke config.
          */
         //$itemKeuangan->id = '>' . ItemKeuangan::ITEM_TRX_SAJA;
@@ -777,6 +823,189 @@ class ReportController extends Controller
         $mPDF1->pagenumSuffix = ' / ';
         // Render PDF
         $mPDF1->Output("NPLS {$branchConfig['toko.nama']} {$waktuCetak}.pdf", 'I');
+    }
+
+    public function actionKartuStok()
+    {
+        $model = new ReportKartuStokForm();
+        $report = null;
+        if (isset($_POST['ReportKartuStokForm'])) {
+            $model->attributes = $_POST['ReportKartuStokForm'];
+            $model->sortBy = ReportKartuStokForm::SORT_BY_TANGGAL_ASC;
+            if ($model->validate()) {
+                $report = $model->reportKartuStok();
+            }
+        }
+
+        $tipePrinterAvailable = [Device::TIPE_PDF_PRINTER];
+        $printers = Device::model()->listDevices($tipePrinterAvailable);
+        $kertasUntukPdf = ReportKartuStokForm::listKertas();
+        $this->render('kartustok', [
+            'model' => $model,
+            'report' => $report,
+            'printers' => $printers,
+            'kertasPdf' => $kertasUntukPdf
+        ]);
+    }
+
+    public function actionCariBarang($term)
+    {
+        $q = new CDbCriteria();
+        $q->addCondition("barcode like :term OR nama like :term");
+        $q->order = 'nama';
+        $q->params = [':term' => "%{$term}%"];
+        $barangs = Barang::model()->findAll($q);
+
+        $r = array();
+        foreach ($barangs as $barang) {
+            $r[] = array(
+                'label' => $barang->nama,
+                'value' => $barang->barcode,
+                'id' => $barang->id,
+                'stok' => is_null($barang->stok) ? 'null' : $barang->stok,
+                'harga' => $barang->hargaJual
+            );
+        }
+
+        $this->renderJSON($r);
+    }
+
+    public function actionRekapPenjualan()
+    {
+        $model = new ReportRekapPenjualanForm;
+        $report = array();
+        if (isset($_POST['ReportRekapPenjualanForm'])) {
+            $model->attributes = $_POST['ReportRekapPenjualanForm'];
+            if ($model->validate()) {
+                $report = $model->reportRekapPenjualan();
+            }
+        }
+
+        $profil = new Profil('search');
+        $profil->unsetAttributes();  // clear any default values
+        if (isset($_GET['Profil'])) {
+            $profil->attributes = $_GET['Profil'];
+        }
+
+        $user = new User('search');
+        $user->unsetAttributes();  // clear any default values
+        if (isset($_GET['User'])) {
+            $user->attributes = $_GET['User'];
+        }
+
+        $tipePrinterAvailable = [Device::TIPE_CSV_PRINTER];
+        $printers = Device::model()->listDevices($tipePrinterAvailable);
+        $this->render('rekappenjualan', array(
+            'model' => $model,
+            'profil' => $profil,
+            'user' => $user,
+            'report' => $report,
+            'printers' => $printers
+        ));
+    }
+
+    public function actionDaftarBarang()
+    {
+        $this->layout = '//layouts/box_kecil';
+
+        $model = new ReportDaftarBarangForm;
+        $report = null;
+
+        $profil = new Profil('search');
+        $profil->unsetAttributes();  // clear any default values
+        if (isset($_GET['Profil'])) {
+            $profil->attributes = $_GET['Profil'];
+        }
+
+        $tipePrinterAvailable = [Device::TIPE_CSV_PRINTER];
+        $printers = Device::model()->listDevices($tipePrinterAvailable);
+        $this->render('daftarbarang', [
+            'model' => $model,
+            'profil' => $profil,
+            'report' => $report,
+            'printers' => $printers
+        ]);
+    }
+
+    public function actionPrintDaftarBarang($printId, $profilId, $hanyaDefault, $sortBy0, $sortBy1)
+    {
+        $model = new ReportDaftarBarangForm;
+        $model->attributes = [
+            'profilId' => $profilId,
+            'hanyaDefault' => $hanyaDefault,
+            'sortBy0' => $sortBy0,
+            'sortBy1' => $sortBy1
+        ];
+
+        if ($model->validate()) {
+            $report = $model->reportDaftarBarang();
+
+            $device = Device::model()->findByPk($printId);
+            switch ($device->tipe_id) {
+                case Device::TIPE_CSV_PRINTER:
+                    $this->daftarBarangCsv($model, $report, $profilId);
+                    break;
+            }
+        } else {
+            $msg = [];
+            foreach ($model->errors as $error) {
+                $msg[] = $error[0];
+            }
+            /* Tampillkan error validasi yang paling atas dahulu */
+            $this->layout = '//layouts/box_kecil';
+            $this->render('../app/error', ['code' => 500, 'message' => $msg[0]]);
+        }
+    }
+
+    public function daftarBarangCsv($model, $report, $profilId)
+    {
+        $profil = Profil::model()->findByPk($profilId);
+        $namaToko = Config::model()->find("nama = 'toko.nama'");
+        $timeStamp = date("Y-m-d-H-i");
+        $namaFile = "Daftar Barang_{$profil->nama}_{$namaToko->nilai}_{$timeStamp}";
+
+        $this->renderPartial('_csv', array(
+            'namaFile' => $namaFile,
+            'csv' => $model->reportKeCsv($report)
+        ));
+    }
+
+    /**
+     * Report Retur Pembelian Form
+     */
+    public function actionReturPembelian()
+    {
+        $model = new ReportReturPembelianForm;
+        $report = array();
+        if (isset($_POST['ReportReturPembelianForm'])) {
+            $model->attributes = $_POST['ReportReturPembelianForm'];
+            if ($model->validate()) {
+                $report = $model->reportReturPembelian();
+            }
+        }
+
+        $profil = new Profil('search');
+        $profil->unsetAttributes();  // clear any default values
+        if (isset($_GET['Profil'])) {
+            $profil->attributes = $_GET['Profil'];
+        }
+
+        $user = new User('search');
+        $user->unsetAttributes();  // clear any default values
+        if (isset($_GET['User'])) {
+            $user->attributes = $_GET['User'];
+        }
+
+        $tipePrinterAvailable = [];
+        $printers = Device::model()->listDevices($tipePrinterAvailable);
+
+        $this->render('returpembelian', array(
+            'model' => $model,
+            'profil' => $profil,
+            'user' => $user,
+            'report' => $report,
+            'printers' => $printers
+        ));
     }
 
 }

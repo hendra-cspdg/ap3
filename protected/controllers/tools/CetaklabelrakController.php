@@ -33,12 +33,19 @@ class CetaklabelrakController extends Controller
             $this->labelRakPdf($layoutForm);
         }
 
+        $scanBarcode = null;
+        /* Ada scan dari aplikasi barcode scanner (android) */
+        if (isset($_GET['barcodescan'])) {
+            $scanBarcode = $_GET['barcodescan'];
+        }
+
         $this->render('index', array(
             'modelForm' => $modelForm,
             'profil' => $profil,
             'rak' => $rak,
             'labelCetak' => $labelCetak,
             'layoutForm' => $layoutForm,
+            'scanBarcode' => $scanBarcode
         ));
     }
 
@@ -60,13 +67,15 @@ class CetaklabelrakController extends Controller
         if (Yii::app()->user->hasState('labelKategoriId')) {
             $filterKategori = Yii::app()->user->getState('labelKategoriId');
         }
-        $barang = is_null($filterKategori) ? LabelRakCetak::model()->findAll() : LabelRakCetak::model()->with('barang', 'barang.kategori')->findAll('barang.kategori_id=' . $filterKategori);
+        $barang = is_null($filterKategori) || empty($filterKategori) ? LabelRakCetak::model()->findAll() : LabelRakCetak::model()->with('barang', 'barang.kategori')->findAll('barang.kategori_id=' . $filterKategori);
 
 
         $listNamaKertas = CetakLabelRakLayoutForm::listNamaKertas();
 
         $mPDF1 = Yii::app()->ePdf->mpdf('utf-8', $listNamaKertas[$layout['kertasId']], 0, '', 7, 7, 7, 7, 9, 9);
-        $mPDF1->WriteHTML($this->renderPartial('_label_rak_pdf', array(
+
+        $labelRakView = CetakLabelRakLayoutForm::listView();
+        $mPDF1->WriteHTML($this->renderPartial($labelRakView[$layout['layoutId']], array(
                     'barang' => $barang,
                     'namaToko' => $this->namaToko(),
                     'tanggalCetak' => $tanggalCetak

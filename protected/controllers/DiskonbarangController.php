@@ -69,6 +69,8 @@ class DiskonbarangController extends Controller
      */
     public function actionUbah($id)
     {
+        $this->redirect(array('view', 'id' => $id));
+        /* Update: tidak bisa ubah, harus dinonaktifkan dan buat baru */
         $this->layout = '//layouts/box_kecil';
         $model = $this->loadModel($id);
 
@@ -91,14 +93,18 @@ class DiskonbarangController extends Controller
      * If deletion is successful, the browser will be redirected to the 'admin' page.
      * @param integer $id the ID of the model to be deleted
      */
-    public function actionHapus($id)
-    {
-        $this->loadModel($id)->delete();
+    /*
+      public function actionHapus($id)
+      {
+      $this->loadModel($id)->delete();
 
-        // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
-        if (!isset($_GET['ajax']))
-            $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('index'));
-    }
+      // if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+      if (!isset($_GET['ajax']))
+      $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('index'));
+      }
+     * Update: Diskon tidak bisa dihapus, hanya bisa dinonaktifkan
+     *
+     */
 
     /**
      * Manages all models.
@@ -107,12 +113,14 @@ class DiskonbarangController extends Controller
     {
         $model = new DiskonBarang('search');
         $model->unsetAttributes();  // clear any default values
-        if (isset($_GET['DiskonBarang']))
+        $model->status = 1;
+        if (isset($_GET['DiskonBarang'])) {
             $model->attributes = $_GET['DiskonBarang'];
+        }
 
-        $this->render('index', array(
+        $this->render('index', [
             'model' => $model,
-        ));
+        ]);
     }
 
     /**
@@ -166,6 +174,7 @@ class DiskonbarangController extends Controller
             'satuan' => $barang->satuan->nama,
             'hargaJual' => $barang->getHargaJual(),
             'hargaJualRaw' => $barang->getHargaJualRaw(),
+            'hargaBeli' => $barang->getHargaBeli(),
             'stok' => $barang->getStok()
         );
 
@@ -229,9 +238,44 @@ class DiskonbarangController extends Controller
         return $return;
     }
 
+    public function renderBarangBonus($data)
+    {
+        $text = '';
+        if (!is_null($data->barangBonus)) {
+            $text = $data->barangBonus->nama . ' (' . $data->barangBonus->barcode . ') ' . $data->barang_bonus_qty . ' x';
+            if (!is_null($data->barang_bonus_diskon_nominal)) {
+                $hargaJual = number_format($data->barangBonus->hargaJualRaw, 0, ',', '.');
+                $diskonNominal = number_format($data->barang_bonus_diskon_nominal, 0, ',', '.');
+                $net = number_format($data->barangBonus->hargaJualRaw - $data->barang_bonus_diskon_nominal, 0, ',', '.');
+                $text .= "<br />" . $hargaJual . ' - ' . $diskonNominal . ' = ' . $net;
+            }
+        }
+        return $text;
+    }
+
     public function actionAutoExpire()
     {
         $this->renderJSON(DiskonBarang::model()->autoExpire());
+    }
+
+    /**
+     * Update status diskon dari halaman index via ajax
+     */
+    public function actionUpdateStatus()
+    {
+        if (isset($_POST['pk'])) {
+            $pk = $_POST['pk'];
+            $status = $_POST['value'];
+            $diskon = DiskonBarang::model()->findByPk($pk);
+            $diskon->status = $status;
+
+            $return = ['sukses' => false];
+            if ($diskon->save()) {
+                $return = ['sukses' => true];
+            }
+
+            $this->renderJSON($return);
+        }
     }
 
 }

@@ -54,7 +54,7 @@ class Pengeluaran extends CActiveRecord
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('tanggal, profil_id, kas_bank_id, kategori_id', 'required'),
+            array('tanggal, profil_id, kas_bank_id, kategori_id', 'required', 'message' => '{attribute} tidak boleh kosong'),
             array('status', 'numerical', 'integerOnly' => true),
             array('nomor, referensi', 'length', 'max' => 45),
             array('uang_dibayar', 'length', 'max' => 18),
@@ -133,9 +133,9 @@ class Pengeluaran extends CActiveRecord
         $criteria->compare("DATE_FORMAT(t.tanggal, '%d-%m-%Y')", $this->tanggal, true);
         $criteria->compare('t.keterangan', $this->keterangan, true);
         $criteria->compare('profil_id', $this->profil_id, true);
-        $criteria->compare('kas_bank_id', $this->kas_bank_id, true);
-        $criteria->compare('kategori_id', $this->kategori_id, true);
-        $criteria->compare('jenis_transaksi_id', $this->jenis_transaksi_id, true);
+        $criteria->compare('kas_bank_id', $this->kas_bank_id);
+        $criteria->compare('kategori_id', $this->kategori_id);
+        $criteria->compare('jenis_transaksi_id', $this->jenis_transaksi_id);
         $criteria->compare('referensi', $this->referensi, true);
         $criteria->compare("DATE_FORMAT(tanggal_referensi, '%d-%m-%Y')", $this->tanggal_referensi, true);
         $criteria->compare('uang_dibayar', $this->uang_dibayar, true);
@@ -208,7 +208,7 @@ class Pengeluaran extends CActiveRecord
                 throw new Exception("Jumlah tidak boleh < 0", 500);
             }
             $this->status = Pengeluaran::STATUS_BAYAR;
-            $this->nomor = $this->generateNomor();
+            $this->nomor = $this->generateNomor6Seq();
             // $this->tanggal = date('Y-m-d');
         }
         return parent::beforeSave();
@@ -285,7 +285,7 @@ class Pengeluaran extends CActiveRecord
      * Mencari nomor untuk penomoran surat
      * @return int maksimum+1 atau 1 jika belum ada nomor untuk tahun ini
      */
-    public function cariNomor()
+    public function cariNomorTahunan()
     {
         $tahun = date('y');
         $data = $this->find(array(
@@ -298,16 +298,16 @@ class Pengeluaran extends CActiveRecord
     }
 
     /**
-     * Membuat nomor surat
+     * Membuat nomor surat, 6 digit sequence number
      * @return string Nomor sesuai format "[KodeCabang][kodeDokumen][Tahun][Bulan][SequenceNumber]"
      */
-    public function generateNomor()
+    public function generateNomor6Seq()
     {
         $config = Config::model()->find("nama='toko.kode'");
         $kodeCabang = $config->nilai;
         $kodeDokumen = KodeDokumen::PENGELUARAN;
         $kodeTahunBulan = date('ym');
-        $sequence = substr('0000' . $this->cariNomor(), -5);
+        $sequence = substr('00000' . $this->cariNomorTahunan(), -6);
         return "{$kodeCabang}{$kodeDokumen}{$kodeTahunBulan}{$sequence}";
     }
 

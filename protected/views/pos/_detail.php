@@ -12,9 +12,16 @@ $this->widget('BGridView', array(
     //'filter' => $penjualanDetail,
     'summaryText' => 'Poin struk ini: ' . $penjualan->getCurPoin() . ' | Poin sebelumnya: ' . $penjualan->getTotalPoinPeriodeBerjalan() . ' | {start}-{end} dari {count}',
     'itemsCssClass' => 'tabel-index responsive',
-    'template' => '{items}{summary}{pager}',
+    'template' => '{items}{pager}{summary}',
     'enableSorting' => false,
     'columns' => array(
+        [
+            'header' => '#',
+            'type' => 'raw',
+            'value' => '$this->grid->dataProvider->pagination->itemCount - $this->grid->dataProvider->pagination->currentPage * $this->grid->dataProvider->pagination->pageSize - ($row)',
+            'headerHtmlOptions' => array('class' => 'rata-kanan'),
+            'htmlOptions' => array('class' => 'rata-kanan'),
+        ],
         array(
             'name' => 'barcode',
             'value' => '$data->barang->barcode',
@@ -32,7 +39,7 @@ $this->widget('BGridView', array(
           'headerHtmlOptions' => array('class' => 'show-for-large-up'),
           'htmlOptions' => array('class' => 'show-for-large-up'),
           ),
-         * 
+         *
          */
         array(
             'header' => 'Harga',
@@ -61,7 +68,7 @@ $this->widget('BGridView', array(
           return rtrim(rtrim(number_format($data->harga_jual, 2, ',', '.'), '0'), ',');
           }
           ),
-         * 
+         *
          */
         array(
             'name' => 'harga_jual',

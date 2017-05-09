@@ -143,13 +143,20 @@ class User extends CActiveRecord
             $this->created_at = date('Y-m-d H:i:s');
         }
         if (!empty($this->newPassword)) {
-            $salt = $this->generateSalt();
+            $salt = $this->generateSalt(); // Ini tidak dipakai. Suatu saat akan dihapus
             $this->password = base64_encode($this->hashPassword($this->newPassword, $salt));
             $this->salt = base64_encode($salt);
         }
         $this->updated_at = date("Y-m-d H:i:s");
         $this->updated_by = Yii::app()->user->id;
         return parent::beforeSave();
+    }
+    
+    public function afterSave()
+    {
+        $theme = Theme::model()->findByPk($this->theme_id);
+        $theme->toCookies();
+        return parent::afterSave();
     }
 
     public function validatePassword($password)
@@ -161,7 +168,7 @@ class User extends CActiveRecord
     {
         $options = array(
             'cost' => $this->findCost(),
-            'salt' => $salt,
+            //'salt' => $salt,
         );
 
         return password_hash($password, PASSWORD_BCRYPT, $options);
@@ -174,7 +181,7 @@ class User extends CActiveRecord
 
     public function findCost()
     {
-        $cost = 10;
+        $cost = 12;
         // Uncomment untuk mengetahui cost optimum
         // dari komputer yang bisa digunakan
 
@@ -189,7 +196,7 @@ class User extends CActiveRecord
           $end = microtime(true);
           } while (($end - $start) < $timeTarget);
          */
-
+         
         return $cost;
     }
 

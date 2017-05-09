@@ -46,9 +46,10 @@ $this->boxHeader['normal'] = 'Barang: ' . $model->nama;
         </div>
         <div class="panel">
             <?php
-            $this->renderPartial('_view_harga_jual_rekomendasi', array(
-                'rrp' => $rrp
-            ))
+//            $this->renderPartial('_view_harga_jual_rekomendasi', array(
+//                'rrp' => $rrp
+//            ))
+            $this->renderPartial('_view_tag', ['curTags'=>$curTags]);
             ?>
         </div>
     </div>

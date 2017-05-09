@@ -51,6 +51,22 @@ $this->boxHeader['normal'] = $headerBoxSmall;
                 'qty',
                 'qty_min',
                 'qty_max',
+                [
+                    'name' => 'barangBonus.nama',
+                    'label' => 'Barang Bonus'
+                ],
+                [
+                    'name' => 'barangBonus.barcode',
+                    'label' => 'Barcode Barang Bonus'
+                ],
+                [
+                    'name' => 'barang_bonus_diskon_nominal',
+                    'value' => number_format($model->barang_bonus_diskon_nominal, 0, ',', '.')
+                ],
+                [
+                    'name' => 'barang_bonus_diskon_persen',
+                    'value' => number_format($model->barang_bonus_diskon_persen, 2, ',', '.')
+                ],
                 array(
                     'label' => 'Status',
                     'value' => $model->namaStatus
@@ -65,16 +81,6 @@ $this->menu = array(
     array('itemOptions' => array('class' => 'divider'), 'label' => false),
     array('itemOptions' => array('class' => 'has-form hide-for-small-only'), 'label' => false,
         'items' => array(
-            array('label' => '<i class="fa fa-pencil"></i> <span class="ak">U</span>bah', 'url' => $this->createUrl('ubah', array('id' => $model->id)), 'linkOptions' => array(
-                    'class' => 'button',
-                    'accesskey' => 'u'
-                )),
-            array('label' => '<i class="fa fa-times"></i> <span class="ak">H</span>apus', 'url' => $this->createUrl('hapus', array('id' => $model->id)), 'linkOptions' => array(
-                    'class' => 'alert button',
-                    'accesskey' => 'h',
-                    'submit' => array('hapus', 'id' => $model->id),
-                    'confirm' => 'Anda yakin?'
-                )),
             array('label' => '<i class="fa fa-asterisk"></i> <span class="ak">I</span>ndex', 'url' => $this->createUrl('index'), 'linkOptions' => array(
                     'class' => 'success button',
                     'accesskey' => 'i'
@@ -84,14 +90,6 @@ $this->menu = array(
     ),
     array('itemOptions' => array('class' => 'has-form show-for-small-only'), 'label' => false,
         'items' => array(
-            array('label' => '<i class="fa fa-pencil"></i>', 'url' => $this->createUrl('ubah', array('id' => $model->id)), 'linkOptions' => array(
-                    'class' => 'button',
-                )),
-            array('label' => '<i class="fa fa-times"></i>', 'url' => $this->createUrl('hapus', array('id' => $model->id)), 'linkOptions' => array(
-                    'class' => 'alert button',
-                    'submit' => array('hapus', 'id' => $model->id),
-                    'confirm' => 'Anda yakin?'
-                )),
             array('label' => '<i class="fa fa-asterisk"></i>', 'url' => $this->createUrl('index'), 'linkOptions' => array(
                     'class' => 'success button',
                 ))

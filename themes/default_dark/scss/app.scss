@@ -414,6 +414,7 @@ label{
     .label{
         font-size: 0.85rem;
         margin-bottom: 3px;
+        font-family: "Open Sans", "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
     }
 }
 
@@ -533,4 +534,23 @@ select {
     cursor: pointer;
     opacity: 0;
     filter: alpha(opacity=0); 
+}
+
+.select2-container {
+    margin-bottom: 20px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: $biru;
+    border-color: darken($biru, 10%);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.select2-results__options{
+    color: $warna-text;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: $biru;
 }

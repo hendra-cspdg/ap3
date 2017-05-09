@@ -19,8 +19,13 @@ class AppController extends PublicController
                 $rekapAds = new RekapAds('search');
                 $rekapAds->unsetAttributes();
                 /* Tampilkan yang sisa hari < 7 hari */
-                $rekapAds->setAttribute('sisa_hari', '< 7');
+                $rekapAds->sisa_hari = '<7';
             }
+        }
+        $configs = Config::model()->findAll("nama like 'toko.%'");
+        $configToko = [];
+        foreach ($configs as $config) {
+            $configToko[$config->nama] = $config->nilai;
         }
 
         if (Yii::app()->user->isGuest) {
@@ -29,6 +34,7 @@ class AppController extends PublicController
             $roles = AuthAssignment::model()->assignedList(Yii::app()->user->id);
             $this->render('index', array(
                 'roles' => $roles,
+                'configToko' => $configToko,
                 'rekapAds' => $rekapAds
             ));
         }
@@ -67,8 +73,15 @@ class AppController extends PublicController
         if (isset($_POST['LoginForm'])) {
             $model->attributes = $_POST['LoginForm'];
             // validate user input and redirect to the previous page if valid
-            if ($model->validate() && $model->login())
+            if ($model->validate() && $model->login()) {
+                /* Simpan theme ke cookies */
+                $user = User::model()->findByPk(Yii::app()->user->id);
+                $theme = Theme::model()->findByPk($user->theme_id);
+                if (!is_null($theme)) {
+                    $theme->toCookies();
+                }
                 $this->redirect(Yii::app()->user->returnUrl);
+            }
         }
         // display the login form
         $this->render('login', array('model' => $model));

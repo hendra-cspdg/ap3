@@ -58,6 +58,10 @@ class PenerimaanController extends Controller
         // Uncomment the following line if AJAX validation is needed
         // $this->performAjaxValidation($model);
 
+        /* Default value */
+        $model->kas_bank_id = !empty($model->kas_bank_id) ? NULL : KasBank::model()->find('nama=:kas', [':kas' => 'Kas'])->id;
+        $model->jenis_transaksi_id = !empty($model->jenis_transaksi_id) ? NULL : JenisTransaksi::model()->find('nama=:tunai', [':tunai' => 'Tunai'])->id;
+
         if (isset($_POST['Penerimaan'])) {
             $model->attributes = $_POST['Penerimaan'];
             if ($model->save()) {
@@ -111,6 +115,7 @@ class PenerimaanController extends Controller
         $itemKeuangan->scenario = 'hanyaDetail';
         if (isset($_GET['ItemKeuangan'])) {
             $itemKeuangan->attributes = $_GET['ItemKeuangan'];
+            $itemKeuangan->aktif();
             //print_r($_GET['ItemKeuangan']);
         }
         $itemKeuangan->id = '>=' . ItemKeuangan::ITEM_TRX_SAJA;
