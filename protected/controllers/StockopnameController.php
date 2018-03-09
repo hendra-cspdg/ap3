@@ -409,4 +409,24 @@ class StockopnameController extends Controller
         $this->renderJSON($return);
     }
 
+    public function actionSetNolAll($id)
+    {
+        $model = $this->loadModel($id);
+
+        $this->renderJSON([
+            'sukses' => true,
+            'rows' => $model->tambahDetailSetNol()
+        ]);
+    }
+
+    public function actionSetInAktifAll($id)
+    {
+        $model = $this->loadModel($id);
+
+        $this->renderJSON([
+            'sukses' => true,
+            'rows' => $model->setInAktifAll()
+        ]);
+    }
+
 }
