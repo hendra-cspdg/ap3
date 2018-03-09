@@ -237,7 +237,7 @@ class Penjualan extends CActiveRecord
 
             $barangAda = $this->barangAda($barang->id);
             if ($barangAda) {
-                $qty+=$barangAda;
+                $qty += $barangAda;
                 PenjualanDetail::model()->deleteAll('barang_id=:barangId AND penjualan_id=:penjualanId', array(
                     ':barangId' => $barang->id,
                     ':penjualanId' => $this->id
@@ -356,7 +356,7 @@ class Penjualan extends CActiveRecord
     {
         $barangAda = $this->barangAda($barang->id);
         if ($barangAda) {
-            $qty+=$barangAda;
+            $qty += $barangAda;
             $this->cleanBarang($barang);
         }
         $this->tambahBarangDetail($barang, $qty);
@@ -379,6 +379,9 @@ class Penjualan extends CActiveRecord
             /* Jika barang tidak ada */
             if (is_null($barang)) {
                 throw new Exception('Barang tidak ditemukan', 500);
+            }
+            if ($barang->status == Barang::STATUS_TIDAK_AKTIF) {
+                throw new Exception('Barang Tidak Aktif', 500);
             }
             $this->tambahBarangProc($barang, $qty);
 
@@ -429,6 +432,7 @@ class Penjualan extends CActiveRecord
         } else if (!is_null($this->cekDiskon($barang->id, DiskonBarang::TIPE_GROSIR))) {
             //terapkan diskon grosir
             //ambil sisanya (yang tidak didiskon)
+            $sisa = $this->aksiDiskonGrosir($barang->id, $qty, $hargaJualNormal);
         } else if (!is_null($this->cekDiskon($barang->id, DiskonBarang::TIPE_BANDED))) {
             //terapkan diskon banded
             //ambil sisanya (yang tidak didiskon)
@@ -466,7 +470,7 @@ class Penjualan extends CActiveRecord
         $sisa = $qty;
         if ($qty > $diskonPromo->qty_max) {
             $qtyPromo = $diskonPromo->qty_max;
-            $sisa-= $diskonPromo->qty_max;
+            $sisa -= $diskonPromo->qty_max;
         } else {
             $qtyPromo = $qty;
             $sisa = 0;
@@ -492,7 +496,7 @@ class Penjualan extends CActiveRecord
         $sisa = $qty;
         if ($qty > $diskonPromo->qty_max) {
             $qtyPromo = $diskonPromo->qty_max;
-            $sisa-= $diskonPromo->qty_max;
+            $sisa -= $diskonPromo->qty_max;
         } else {
             $qtyPromo = $qty;
             $sisa = 0;
@@ -501,6 +505,27 @@ class Penjualan extends CActiveRecord
         $hargaJualSatuan = $hargaJualNormal - $diskonNominal;
         $this->insertBarang($barangId, $qtyPromo, $hargaJualSatuan, $diskonNominal, DiskonBarang::TIPE_PROMO_MEMBER);
         return $sisa;
+    }
+
+    public function aksiDiskonGrosir($barangId, $qty, $hargaJualNormal)
+    {
+        $diskonGrosir = DiskonBarang::model()->find(array(
+            'condition' => 'barang_id=:barangId and status=:status and tipe_diskon_id=:tipeDiskon and dari <= now() and (sampai >= now() or sampai is null)',
+            'order' => 'id desc',
+            'params' => array(
+                'barangId' => $barangId,
+                'status' => DiskonBarang::STATUS_AKTIF,
+                'tipeDiskon' => DiskonBarang::TIPE_GROSIR,
+            )
+        ));
+
+        if ($qty>=$diskonGrosir->qty_min){
+            $diskonNominal = $diskonGrosir->nominal;
+            $hargaJualSatuan = $hargaJualNormal - $diskonNominal;
+            $this->insertBarang($barangId, $qty, $hargaJualSatuan, $diskonNominal, DiskonBarang::TIPE_GROSIR);
+            return 0;
+        }
+        return $qty;
     }
 
     public function aksiDiskonBanded($barangId, $qty, $hargaJualNormal)
@@ -924,7 +949,7 @@ class Penjualan extends CActiveRecord
          */
         $piutangDetail = new HutangPiutangDetail;
         $piutangDetail->hutang_piutang_id = $piutang->id;
-        $piutangDetail->keterangan = 'Pembelian: ' . $this->nomor;
+        $piutangDetail->keterangan = 'Penjualan: ' . $this->nomor;
         $piutangDetail->jumlah = $jumlahPenjualan;
         if (!$piutangDetail->save()) {
             throw new Exception("Gagal simpan piutang detail", 500);
@@ -1047,7 +1072,7 @@ class Penjualan extends CActiveRecord
 // Cari nama toko ini
         $config = Config::model()->find("nama='toko.nama'");
         foreach ($details as $detail):
-            $csv.= "\"{$detail['barcode']}\","
+            $csv .= "\"{$detail['barcode']}\","
                     . "\"{$detail['barang_id']}\","
                     . "\"{$detail['nama_barang']}\","
                     . "\"{$detail['qty']}\","
@@ -1273,8 +1298,8 @@ class Penjualan extends CActiveRecord
 
         $struk = '';
         $struk .= str_pad($branchConfig['toko.nama'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL;
-        $struk .=!empty($branchConfig['struk.header1']) ? str_pad($branchConfig['struk.header1'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
-        $struk .=!empty($branchConfig['struk.header2']) ? str_pad($branchConfig['struk.header2'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
+        $struk .= !empty($branchConfig['struk.header1']) ? str_pad($branchConfig['struk.header1'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
+        $struk .= !empty($branchConfig['struk.header2']) ? str_pad($branchConfig['struk.header2'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
         $struk .= str_pad($this->nomor . ' ' . date_format(date_create_from_format('d-m-Y H:i:s', $this->tanggal), 'dmy H:i') . ' ' . substr($user->nama_lengkap, 0, 13), $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL;
 
         $struk .= str_pad('', $jumlahKolom, '-') . PHP_EOL;
@@ -1346,8 +1371,8 @@ class Penjualan extends CActiveRecord
         }
 
         $struk .= str_pad('', $jumlahKolom, '-') . PHP_EOL;
-        $struk .=!empty($branchConfig['struk.footer1']) ? str_pad($branchConfig['struk.footer1'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
-        $struk .=!empty($branchConfig['struk.footer2']) ? str_pad($branchConfig['struk.footer2'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
+        $struk .= !empty($branchConfig['struk.footer1']) ? str_pad($branchConfig['struk.footer1'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
+        $struk .= !empty($branchConfig['struk.footer2']) ? str_pad($branchConfig['struk.footer2'], $jumlahKolom, ' ', STR_PAD_BOTH) . PHP_EOL : '';
         $struk .= PHP_EOL;
 
         return $struk;
@@ -1524,7 +1549,7 @@ class Penjualan extends CActiveRecord
         $struk .= $signatureHead1 . str_pad($signatureHead2, 28 - (strlen($signatureHead2) / 2) + strlen($signatureHead2), ' ', STR_PAD_LEFT) . PHP_EOL;
         $struk .= PHP_EOL . PHP_EOL . PHP_EOL . PHP_EOL;
         $struk .= '     (                )               (                )' . PHP_EOL;
-        $rowCount+=7;
+        $rowCount += 7;
         for ($index = 0; $index < $rowPerPage - $rowCount; $index++) {
             $struk .= PHP_EOL;
         }

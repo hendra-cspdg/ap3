@@ -11,6 +11,7 @@ $oranye: #edc240;
 $merah: #b71c1c;
 $violet: #9440ed;
 $warna-text: #212121;
+$warning-color: #F57C00;
 
 @mixin animasi($param){
     -webkit-animation: $param;
@@ -32,7 +33,7 @@ body{
     cursor: default;
 }
 
-.delete{
+.delete, .angka-negatif{
     color: $merah;
 }
 
@@ -98,6 +99,17 @@ option{
     }
     tr.hj-berubah{
         background-color: #388E3C;
+        font-weight: bold;
+        td{
+            color: #fff;
+            a.editable{
+                color: #fff;     
+                border-bottom-color: #fff;           
+            }
+        }
+    }
+    tr.margin-min{
+        background-color: #d32f2f;
         font-weight: bold;
         td{
             color: #fff;
@@ -485,7 +497,22 @@ select {
 }
 
 .grid-loading{
-    background:url(3.gif) no-repeat;
+    background:url(3.gif) no-repeat;    
+    th{
+        animation: bgpulse 0.5s infinite;
+    }
+}
+
+@keyframes bgpulse {
+    0% {
+        background-color: inherit;
+    }
+    50% {
+        background-color: $warning-color;
+    }
+    100% {
+        background-color: inherit;
+    }
 }
 
 //jquery-editable overwrite
@@ -553,4 +580,12 @@ select {
 
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: $biru;
+}
+
+.text-total{
+    font-weight: bold;
+}
+
+.reveal-modal{
+    background-color: rgba(0,0,0,0.5);
 }
