@@ -112,7 +112,7 @@ class PoDetail extends CActiveRecord
      * @return CActiveDataProvider the data provider that can return the models
      *                             based on the search/filter conditions.
      */
-    public function search()
+    public function search($pageSize = 10)
     {
         // @todo Please modify the following code to remove attributes that should not be searched.
 
@@ -140,8 +140,11 @@ class PoDetail extends CActiveRecord
         ];
 
         return new CActiveDataProvider($this, [
-            'criteria'=> $criteria,
-            'sort'    => $sort
+            'criteria'  => $criteria,
+            'sort'      => $sort,
+            'pagination'=> [
+                'pageSize'=> $pageSize,
+            ],
         ]);
     }
 
@@ -169,5 +172,10 @@ class PoDetail extends CActiveRecord
     public function getTotal()
     {
         return number_format($this->qty_order * $this->harga_beli, 0, ',', '.');
+    }
+
+    public static function sudahAda($poId, $barangId)
+    {
+        return  PoDetail::model()->find('po_id=:poId AND barang_id=:barangId', [':poId' => $poId, ':barangId' => $barangId]);
     }
 }
